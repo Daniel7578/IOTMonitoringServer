@@ -60,9 +60,9 @@ def analyze_data():
             client.publish(topic, message)
             alerts += 1
         if station_alert:
-            message = "ALERT Station".format(last_activity, datetime.now())
+            message = "ALERT Station {} {}".format(last_activity, datetime.now())
             topic = '{}/{}/{}/{}/in'.format(country, state, city, user)
-            print(datetime.now(), "Sending alert to {} {}".format(topic, variable))
+            print(datetime.now(), "Sending station alert to {} {}".format(topic, variable))
             client.publish(topic, message)
             alerts += 1
 
