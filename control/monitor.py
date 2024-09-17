@@ -8,7 +8,7 @@ import schedule
 import time
 from django.conf import settings
 
-client = mqtt.Client(settings.MQTT_USER_PUB)
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, settings.MQTT_USER_PUB)
 
 
 def analyze_data():
@@ -31,10 +31,12 @@ def analyze_data():
                 'measurement__min_value',
                 'station__location__city__name',
                 'station__location__state__name',
-                'station__location__country__name')
+                'station__location__country__name',
+                'station_last_activity')
     alerts = 0
     for item in aggregation:
         alert = False
+        station_alert = False
 
         variable = item["measurement__name"]
         max_value = item["measurement__max_value"] or 0
@@ -44,12 +46,21 @@ def analyze_data():
         state = item['station__location__state__name']
         city = item['station__location__city__name']
         user = item['station__user__username']
+        last_activity = item['station_last_activity']
 
         if item["check_value"] > max_value or item["check_value"] < min_value:
+            alert = True
+        if last_activity < datetime.now() - timedelta(minutes=5):
             alert = True
 
         if alert:
             message = "ALERT {} {} {}".format(variable, min_value, max_value)
+            topic = '{}/{}/{}/{}/in'.format(country, state, city, user)
+            print(datetime.now(), "Sending alert to {} {}".format(topic, variable))
+            client.publish(topic, message)
+            alerts += 1
+        if station_alert:
+            message = "ALERT Station".format(last_activity, datetime.now())
             topic = '{}/{}/{}/{}/in'.format(country, state, city, user)
             print(datetime.now(), "Sending alert to {} {}".format(topic, variable))
             client.publish(topic, message)
@@ -84,7 +95,7 @@ def setup_mqtt():
     print("Iniciando cliente MQTT...", settings.MQTT_HOST, settings.MQTT_PORT)
     global client
     try:
-        client = mqtt.Client(settings.MQTT_USER_PUB)
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, settings.MQTT_USER_PUB)
         client.on_connect = on_connect
         client.on_disconnect = on_disconnect
 
