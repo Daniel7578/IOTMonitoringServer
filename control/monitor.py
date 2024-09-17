@@ -50,7 +50,7 @@ def analyze_data():
 
         if item["check_value"] > max_value or item["check_value"] < min_value:
             alert = True
-        if last_activity < datetime.now().replace(tzinfo=None) - timedelta(minutes=5):
+        if last_activity.replace(tzinfo=None) < datetime.now().replace(tzinfo=None) - timedelta(minutes=5):
             alert = True
 
         if alert:
